@@ -2,10 +2,11 @@ import CoreHaptics
 import UIKit
 
 /// Produces a paired heartbeat whose interval tightens as an active monster
-/// approaches. UIImpactFeedbackGenerator is used when Core Haptics is unavailable.
+/// approaches. UIKit impact feedback is used when Core Haptics is unavailable.
 final class HeartbeatHaptics {
     private var engine: CHHapticEngine?
     private var timeUntilBeat: TimeInterval = 0
+    private var didLogCoreHapticsFailure = false
     private let fallback = UIImpactFeedbackGenerator(style: .heavy)
     var isEnabled = true
 
@@ -13,16 +14,18 @@ final class HeartbeatHaptics {
         guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else { return }
         do {
             let hapticEngine = try CHHapticEngine()
+            engine = hapticEngine
             hapticEngine.stoppedHandler = { [weak self] _ in
-                do { try self?.engine?.start() } catch { }
+                self?.restartEngineSafely()
             }
             hapticEngine.resetHandler = { [weak self] in
-                do { try self?.engine?.start() } catch { }
+                self?.restartEngineSafely()
             }
             try hapticEngine.start()
-            engine = hapticEngine
         } catch {
             engine = nil
+            logCoreHapticsFailure("تعذر بدء الاهتزازات اللمسية: \(error.localizedDescription)")
+            // Haptics are optional and must never prevent the game from starting.
         }
     }
 
@@ -31,31 +34,49 @@ final class HeartbeatHaptics {
             timeUntilBeat = 0
             return
         }
-        let clampedThreat = min(max(threat, 0), 1)
-        guard clampedThreat > 0.08 else {
+        let safeThreat = threat.isFinite ? min(max(threat, 0), 1) : 0
+        guard safeThreat > 0.08 else {
             timeUntilBeat = 0
             return
         }
 
-        timeUntilBeat -= max(0, delta)
+        let safeDelta = delta.isFinite ? max(0, delta) : 0
+        timeUntilBeat -= safeDelta
         guard timeUntilBeat <= 0 else { return }
 
         // Move from a cautious ~1.0 second beat to a fast ~0.30 second beat.
-        let interval = 1.02 - Double(clampedThreat) * 0.72
+        let interval = 1.02 - Double(safeThreat) * 0.72
         timeUntilBeat = max(0.28, interval)
-        let intensity = Float(0.28 + clampedThreat * 0.68)
+        let intensity = Float(0.28 + safeThreat * 0.68)
         if playCoreHapticsBeat(intensity: intensity) { return }
 
         fallback.prepare()
         fallback.impactOccurred(intensity: CGFloat(intensity))
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { [weak self] in
-            self?.fallback.impactOccurred(intensity: CGFloat(min(1, intensity * 0.76)))
-            self?.fallback.prepare()
+            guard let self, self.isEnabled else { return }
+            self.fallback.impactOccurred(intensity: CGFloat(min(1, intensity * 0.76)))
+            self.fallback.prepare()
         }
     }
 
+    private func restartEngineSafely() {
+        guard let engine else { return }
+        do {
+            try engine.start()
+        } catch {
+            self.engine = nil
+            logCoreHapticsFailure("تعذر إعادة تشغيل محرك الاهتزاز: \(error.localizedDescription)")
+        }
+    }
+
+    private func logCoreHapticsFailure(_ message: String) {
+        guard !didLogCoreHapticsFailure else { return }
+        didLogCoreHapticsFailure = true
+        AppErrorLogger.append(AppErrorInfo(message: message, file: #fileID, line: #line))
+    }
+
     private func playCoreHapticsBeat(intensity: Float) -> Bool {
-        guard let engine else { return false }
+        guard intensity.isFinite, let engine else { return false }
         let parameters = [
             CHHapticEventParameter(parameterID: .hapticIntensity, value: intensity),
             CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.22)
@@ -77,6 +98,7 @@ final class HeartbeatHaptics {
             try player.start(atTime: CHHapticTimeImmediate)
             return true
         } catch {
+            logCoreHapticsFailure("تعذر إنشاء نبضة الاهتزاز: \(error.localizedDescription)")
             return false
         }
     }

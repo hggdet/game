@@ -154,6 +154,41 @@ struct AppErrorInfo: Identifiable, Equatable {
     }
 }
 
+enum AppErrorLogger {
+    static let fileName = "SignalLast-error.log"
+    private static let lock = NSLock()
+
+    @discardableResult
+    static func append(_ error: AppErrorInfo) -> Bool {
+        guard let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return false }
+        let url = documents.appendingPathComponent(fileName, isDirectory: false)
+        let timestamp = ISO8601DateFormatter().string(from: Date())
+        let entry = "[\(timestamp)] \(error.message)\n\(error.file):\(error.line)\n\n"
+        guard let data = entry.data(using: .utf8) else { return false }
+
+        lock.lock()
+        defer { lock.unlock() }
+
+        if FileManager.default.fileExists(atPath: url.path) {
+            do {
+                let handle = try FileHandle(forWritingTo: url)
+                defer { try? handle.close() }
+                try handle.seekToEnd()
+                try handle.write(contentsOf: data)
+            } catch {
+                return false
+            }
+        } else {
+            do {
+                try data.write(to: url, options: .atomic)
+            } catch {
+                return false
+            }
+        }
+        return true
+    }
+}
+
 enum GameLoadResult {
     case missing
     case loaded(GameState)

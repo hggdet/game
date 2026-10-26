@@ -197,11 +197,16 @@ final class DeathAngelAI: SKNode {
             }
             return
         }
-        guard !patrolPoints.isEmpty else { physicsBody?.velocity = .zero; return }
-        let target = patrolPoints[patrolIndex % patrolPoints.count]
+        guard patrolPoints.indices.contains(patrolIndex) else {
+            patrolIndex = 0
+            physicsBody?.velocity = .zero
+            return
+        }
+        let target = patrolPoints[patrolIndex]
         move(toward: target, speed: 36 * scaleFactor)
         if pointDistance(position, target) < 12 * scaleFactor {
-            patrolIndex = (patrolIndex + 1) % patrolPoints.count
+            patrolIndex += 1
+            if patrolIndex >= patrolPoints.count { patrolIndex = 0 }
         }
     }
 
@@ -217,7 +222,7 @@ final class DeathAngelAI: SKNode {
     }
 
     private func advanceSearch(delta: TimeInterval) {
-        guard searchTargetIndex < searchTargets.count else {
+        guard searchTargets.indices.contains(searchTargetIndex) else {
             setState(.patrol)
             return
         }
@@ -477,11 +482,16 @@ final class DemogorgonAI: SKNode {
             }
             return
         }
-        guard !patrolPoints.isEmpty else { physicsBody?.velocity = .zero; return }
-        let target = patrolPoints[patrolIndex % patrolPoints.count]
+        guard patrolPoints.indices.contains(patrolIndex) else {
+            patrolIndex = 0
+            physicsBody?.velocity = .zero
+            return
+        }
+        let target = patrolPoints[patrolIndex]
         move(toward: target, speed: 31 * scaleFactor)
         if pointDistance(position, target) < 12 * scaleFactor {
-            patrolIndex = (patrolIndex + 1) % patrolPoints.count
+            patrolIndex += 1
+            if patrolIndex >= patrolPoints.count { patrolIndex = 0 }
         }
     }
 
@@ -498,7 +508,7 @@ final class DemogorgonAI: SKNode {
     }
 
     private func advanceSearch(delta: TimeInterval) {
-        guard searchTargetIndex < searchTargets.count else {
+        guard searchTargets.indices.contains(searchTargetIndex) else {
             setState(.patrol)
             return
         }

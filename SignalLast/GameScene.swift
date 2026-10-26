@@ -6,6 +6,21 @@ final class GameScene: SKScene {
     var onProgress: ((GameState) -> Void)?
     var onCheckpoint: ((GameCheckpoint) -> Void)?
     var onDebugModeChanged: ((Bool) -> Void)?
+    var onError: ((AppErrorInfo) -> Void)?
+
+    private enum WorldBuildError: LocalizedError {
+        case invalidSceneSize
+        case invalidScale
+        case invalidLevelGeometry
+
+        var errorDescription: String? {
+            switch self {
+            case .invalidSceneSize: return "أبعاد عرض اللعبة غير صالحة."
+            case .invalidScale: return "تعذر حساب مقياس عالم اللعبة."
+            case .invalidLevelGeometry: return "تحتوي بيانات المحطة على أبعاد أو إحداثيات غير صالحة."
+            }
+        }
+    }
 
     private var scaleFactor: CGFloat = 1
     private var levelData = StationLevelData.standard
@@ -18,6 +33,9 @@ final class GameScene: SKScene {
     private var transmissionRoomRect = CGRect.zero
     private var glassBroken = false
     private var hasBuiltWorld = false
+    private var pendingWorldBuild = false
+    private var buildRetryScheduled = false
+    private var isSynchronizingSceneSize = false
     private var lastUpdateTime: TimeInterval = 0
     private var publishClock: TimeInterval = 0
     private var fogClock: TimeInterval = 0
@@ -72,26 +90,107 @@ final class GameScene: SKScene {
 
     override func didMove(to view: SKView) {
         scaleMode = .resizeFill
-        let viewSize = view.bounds.size
-        if viewSize.width > 0, viewSize.height > 0 {
-            let landscapeSize = CGSize(width: max(viewSize.width, viewSize.height), height: min(viewSize.width, viewSize.height))
-            if size != landscapeSize { size = landscapeSize }
-        }
         backgroundColor = UIColor(red: 0.006, green: 0.012, blue: 0.018, alpha: 1)
         physicsWorld.gravity = .zero
         physicsWorld.speed = 1
-        if !hasBuiltWorld, gameState.hasStarted, size.width > 0, size.height > 0 { buildWorld() }
+        let needsBuild = pendingWorldBuild || (!hasBuiltWorld && gameState.hasStarted)
+        if needsBuild { pendingWorldBuild = true }
+        let sizeIsReady = synchronizeSceneSize(from: view)
+        guard needsBuild, pendingWorldBuild else { return }
+        if sizeIsReady { attemptPendingWorldBuild() }
+        else { schedulePendingWorldBuildRetry() }
     }
 
     override func didChangeSize(_ oldSize: CGSize) {
-        guard size.width > 0, size.height > 0 else { return }
-        if size.width < size.height {
-            let landscapeSize = CGSize(width: size.height, height: size.width)
-            if size != landscapeSize { size = landscapeSize }
+        guard !isSynchronizingSceneSize, let view, synchronizeSceneSize(from: view) else { return }
+        guard pendingWorldBuild || (hasBuiltWorld && oldSize != .zero && oldSize != size) else { return }
+        pendingWorldBuild = true
+        attemptPendingWorldBuild()
+    }
+
+    private func synchronizeSceneSize(from view: SKView) -> Bool {
+        let viewSize = view.bounds.size
+        guard viewSize.width.isFinite, viewSize.height.isFinite else {
+            reportWorldBuildFailure(WorldBuildError.invalidSceneSize)
+            return false
+        }
+        // A zero-sized view is a normal transient during SwiftUI/SpriteKit layout.
+        // Keep the pending request and retry from didChangeSize instead of building.
+        guard viewSize.width > 0, viewSize.height > 0 else { return false }
+        let landscapeSize = CGSize(width: max(viewSize.width, viewSize.height), height: min(viewSize.width, viewSize.height))
+        guard landscapeSize.width.isFinite, landscapeSize.height.isFinite,
+              landscapeSize.width > 0, landscapeSize.height > 0 else {
+            reportWorldBuildFailure(WorldBuildError.invalidSceneSize)
+            return false
+        }
+        if size != landscapeSize {
+            isSynchronizingSceneSize = true
+            size = landscapeSize
+            isSynchronizingSceneSize = false
+        }
+        return true
+    }
+
+    private func attemptPendingWorldBuild() {
+        guard pendingWorldBuild else { return }
+        guard let view else { return }
+        guard synchronizeSceneSize(from: view) else {
+            schedulePendingWorldBuildRetry()
             return
         }
-        guard hasBuiltWorld, oldSize != .zero else { return }
-        buildWorld()
+        pendingWorldBuild = false
+        do {
+            try buildWorld()
+        } catch {
+            reportWorldBuildFailure(error)
+        }
+    }
+
+    private func schedulePendingWorldBuildRetry() {
+        guard pendingWorldBuild, !buildRetryScheduled else { return }
+        buildRetryScheduled = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+            guard let self else { return }
+            self.buildRetryScheduled = false
+            guard self.pendingWorldBuild, self.view != nil else { return }
+            self.attemptPendingWorldBuild()
+        }
+    }
+
+    private func reportWorldBuildFailure(_ error: Error) {
+        pendingWorldBuild = false
+        onError?(AppErrorInfo(
+            message: "تعذر بدء اللعبة: \(error.localizedDescription)",
+            file: #fileID,
+            line: #line
+        ))
+    }
+
+    private func isFinite(_ point: CGPoint) -> Bool {
+        point.x.isFinite && point.y.isFinite
+    }
+
+    private func isFinitePositive(_ rect: CGRect) -> Bool {
+        rect.minX.isFinite && rect.minY.isFinite && rect.maxX.isFinite && rect.maxY.isFinite
+            && rect.width.isFinite && rect.height.isFinite
+            && rect.width > 0 && rect.height > 0
+    }
+
+    private func hasValidLevelGeometry(_ data: StationLevelData) -> Bool {
+        isFinitePositive(data.worldBounds)
+            && data.rooms.allSatisfy { isFinitePositive($0.rect) }
+            && data.doors.allSatisfy { isFinitePositive($0.rect) }
+            && data.surfaceZones.allSatisfy { isFinitePositive($0.rect) }
+            && data.wallRects.allSatisfy { isFinitePositive($0) }
+            && data.pickups.allSatisfy { isFinite($0.position) }
+            && data.lockers.allSatisfy { isFinite($0.center) }
+            && data.demogorgonPatrolWaypoints.allSatisfy { isFinite($0) }
+            && data.deathAngelPatrolWaypoints.allSatisfy { isFinite($0) }
+            && isFinite(data.spawns.player)
+            && isFinite(data.spawns.deathAngel)
+            && isFinite(data.spawns.demogorgon)
+            && isFinite(data.spawns.survivor)
+            && isFinite(data.spawns.transmission)
     }
 
     func setMovementInput(_ input: CGVector) {
@@ -105,13 +204,15 @@ final class GameScene: SKScene {
     func startNewGame() {
         gameState = GameState()
         collectedPartIDs = []
-        buildWorld()
+        pendingWorldBuild = true
+        attemptPendingWorldBuild()
     }
 
     func loadGame(_ savedState: GameState) {
         gameState = savedState
         collectedPartIDs = savedState.collectedPartIDs
-        buildWorld()
+        pendingWorldBuild = true
+        attemptPendingWorldBuild()
     }
 
     func flushProgress() {
@@ -391,15 +492,22 @@ final class GameScene: SKScene {
         }
     }
 
-    private func buildWorld() {
-        guard size.width > 0, size.height > 0 else { return }
+    private func buildWorld() throws {
+        guard size.width.isFinite, size.height.isFinite, size.width > 0, size.height > 0 else {
+            throw WorldBuildError.invalidSceneSize
+        }
+        let newScaleFactor = min(size.width / 844, size.height / 390)
+        guard newScaleFactor.isFinite, newScaleFactor > 0 else { throw WorldBuildError.invalidScale }
+        let standardLevel = StationLevelData.standard
+        guard hasValidLevelGeometry(standardLevel) else { throw WorldBuildError.invalidLevelGeometry }
+
         hasBuiltWorld = false
         removeAllChildren()
         physicsWorld.removeAllJoints()
         physicsWorld.gravity = .zero
 
-        scaleFactor = min(size.width / 844, size.height / 390)
-        levelData = StationLevelData.standard
+        scaleFactor = newScaleFactor
+        levelData = standardLevel
         worldLevelData = levelData.scaled(by: scaleFactor)
         roomBounds = worldLevelData.worldBounds
         carpetRect = worldLevelData.surfaceZone(id: "entrance-carpet")?.rect ?? .zero
@@ -633,10 +741,13 @@ final class GameScene: SKScene {
     private func spawnCollectibleParts(patrolRoutes: [[CGPoint]]) {
         for placement in worldLevelData.pickups {
             guard !collectedPartIDs.contains(placement.id) else { continue }
-            let routeDistance = patrolRoutes.flatMap { route in
-                route.indices.map { index in
-                    distance(placement.position, toSegmentFrom: route[index], to: route[(index + 1) % route.count])
+            let routeDistance = patrolRoutes.flatMap { route -> [CGFloat] in
+                guard route.count > 1, let first = route.first, let last = route.last else { return [] }
+                var distances = zip(route, route.dropFirst()).map { segment in
+                    distance(placement.position, toSegmentFrom: segment.0, to: segment.1)
                 }
+                distances.append(distance(placement.position, toSegmentFrom: last, to: first))
+                return distances
             }.min() ?? .greatestFiniteMagnitude
             let value = routeDistance <= 90 * scaleFactor ? 3 : (routeDistance <= 190 * scaleFactor ? 2 : 1)
             let part = CollectiblePart(index: placement.id, pointValue: value, isNoisy: placement.isNoisy, scaleFactor: scaleFactor)

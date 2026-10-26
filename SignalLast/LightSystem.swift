@@ -66,8 +66,11 @@ final class FlashlightSystem {
     }
 
     func cycleLevel() {
-        guard let index = FlashlightLevel.allCases.firstIndex(of: level) else { return }
-        level = FlashlightLevel.allCases[(index + 1) % FlashlightLevel.allCases.count]
+        let levels = FlashlightLevel.allCases
+        guard let index = levels.firstIndex(of: level), !levels.isEmpty else { return }
+        let nextIndex = (index + 1) % levels.count
+        guard levels.indices.contains(nextIndex) else { return }
+        level = levels[nextIndex]
     }
 
     func restore(batteryPercent: CGFloat, level: FlashlightLevel, isOn: Bool) {

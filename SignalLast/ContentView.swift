@@ -22,6 +22,7 @@ struct ContentView: View {
     @State private var revealMap = GameStateStore.loadPreferences().revealMap ?? false
     @State private var debugEnabled = GameStateStore.loadPreferences().debugEnabled ?? false
     @State private var appError: AppErrorInfo?
+    @State private var appErrorLogged = false
 
     private var hasContinue: Bool {
         GameStateStore.loadGame()?.isResumable ?? false
@@ -57,7 +58,8 @@ struct ContentView: View {
             case .error:
                 ErrorView(
                     details: appError ?? AppErrorInfo(message: "حدث خطأ غير متوقع.", file: "ContentView.swift", line: 1),
-                    onDismiss: { appError = nil; screen = .menu }
+                    logSaved: appErrorLogged,
+                    onDismiss: { appError = nil; appErrorLogged = false; screen = .menu }
                 )
             }
         }
@@ -103,12 +105,11 @@ struct ContentView: View {
             switch GameStateStore.inspectGame() {
             case .loaded(let saved): liveState = saved
             case .missing: break
-            case .corrupted(let details): appError = details; screen = .error
+            case .corrupted(let details): presentError(details)
             }
             if appError == nil {
                 if case .corrupted(let details) = GameStateStore.inspectCheckpoint() {
-                    appError = details
-                    screen = .error
+                    presentError(details)
                 }
             }
             gameScene.publishSnapshotNow()
@@ -163,6 +164,11 @@ struct ContentView: View {
     }
 
     private func configureSceneCallbacks() {
+        gameScene.onError = { error in
+            DispatchQueue.main.async {
+                presentError(error)
+            }
+        }
         gameScene.onSnapshot = { newSnapshot in
             guard appError == nil else { return }
             snapshot = newSnapshot
@@ -173,19 +179,23 @@ struct ContentView: View {
         gameScene.onProgress = { newState in
             liveState = newState
             if let error = GameStateStore.saveGame(newState) {
-                appError = error
-                screen = .error
+                presentError(error)
             }
         }
         gameScene.onCheckpoint = { checkpoint in
             if let error = GameStateStore.saveCheckpoint(checkpoint) {
-                appError = error
-                screen = .error
+                presentError(error)
             }
         }
         gameScene.onDebugModeChanged = { value in
             if debugEnabled != value { debugEnabled = value }
         }
+    }
+
+    private func presentError(_ error: AppErrorInfo) {
+        appErrorLogged = AppErrorLogger.append(error)
+        appError = error
+        screen = .error
     }
 
     private func startNewGame() {
@@ -197,6 +207,7 @@ struct ContentView: View {
         GameStateStore.clearGame()
         GameStateStore.clearCheckpoint()
         appError = nil
+        appErrorLogged = false
         pendingRun = .newGame
         screen = .game
         if isAlreadyInGame { startPendingRunIfNeeded() }

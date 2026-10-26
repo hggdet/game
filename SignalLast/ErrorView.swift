@@ -3,6 +3,7 @@ import UIKit
 
 struct ErrorView: View {
     let details: AppErrorInfo
+    let logSaved: Bool
     let onDismiss: () -> Void
 
     @State private var didCopy = false
@@ -48,12 +49,20 @@ struct ErrorView: View {
                                 .foregroundStyle(.cyan.opacity(0.95))
                                 .textSelection(.enabled)
                                 .frame(maxWidth: .infinity, alignment: .leading)
+                            Text(logSaved
+                                 ? "حُفظت التفاصيل في Documents/\(AppErrorLogger.fileName)"
+                                 : "تعذّر حفظ السجل؛ انسخ التفاصيل أدناه.")
+                                .font(.system(size: 10, weight: .medium, design: .rounded))
+                                .foregroundStyle(.white.opacity(0.56))
                         }
                         .padding(12)
                         .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 
                         Button {
-                            UIPasteboard.general.string = details.copyText
+                            let logStatus = logSaved
+                                ? "Documents/\(AppErrorLogger.fileName)"
+                                : "لم يُحفظ سجل التفاصيل في Documents."
+                            UIPasteboard.general.string = "\(details.copyText)\n\(logStatus)"
                             didCopy = true
                         } label: {
                             Label(didCopy ? "تم النسخ" : "نسخ تفاصيل الخطأ", systemImage: didCopy ? "checkmark" : "doc.on.doc")
