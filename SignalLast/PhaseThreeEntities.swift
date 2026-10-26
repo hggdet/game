@@ -49,7 +49,7 @@ final class CollectiblePart: SKNode {
     }
 
     required init?(coder: NSCoder) {
-        fatalError("CollectiblePart is created in code.")
+        return nil
     }
 }
 
@@ -114,7 +114,7 @@ final class SurvivorNPC: SKNode {
     }
 
     required init?(coder: NSCoder) {
-        fatalError("SurvivorNPC is created in code.")
+        return nil
     }
 
     func beginFollowing() {

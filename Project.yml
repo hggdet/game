@@ -12,8 +12,6 @@ settings:
     GENERATE_INFOPLIST_FILE: YES
     INFOPLIST_KEY_UIUserInterfaceStyle: Dark
     INFOPLIST_KEY_CFBundleDisplayName: "إشارة أخيرة"
-    INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
-    INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: UIInterfaceOrientationPortrait
     CODE_SIGN_STYLE: Automatic
 targets:
   SignalLast:
@@ -21,6 +19,15 @@ targets:
     platform: iOS
     sources:
       - path: SignalLast
+    info:
+      properties:
+        UIRequiresFullScreen: true
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        "UISupportedInterfaceOrientations~ipad":
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.signal-last.prototype

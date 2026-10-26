@@ -31,7 +31,7 @@ final class MonsterMemory {
 /// Sound-only hunter. It remembers the origin of the loudest recent event and
 /// never reads the player's live location.
 final class DeathAngelAI: SKNode {
-    private(set) var state: DeathAngelState = .patrol
+    private(set) var state: DeathAngelState = .dormant
     private(set) var lastKnownPosition = CGPoint.zero
     private(set) var hasLastKnownPosition = false
     var onStateChange: ((DeathAngelState) -> Void)?
@@ -41,13 +41,14 @@ final class DeathAngelAI: SKNode {
     private let patrolPoints: [CGPoint]
     private let hidingSpots: [CGPoint]
     private let memory: MonsterMemory
-    private let bodySprite = SKSpriteNode(imageNamed: "DeathAngel")
+    private let bodySprite = SKSpriteNode()
     private var patrolIndex = 0
     private var searchTargets: [CGPoint] = []
     private var searchTargetIndex = 0
     private var searchWait: TimeInterval = 0
     private var worldClock: TimeInterval = 0
     private var patrolHoldElapsed: TimeInterval = 0
+    private var quietElapsed: TimeInterval = 0
     var isInDeadlyCorridor = false
 
     init(scaleFactor: CGFloat, patrolPoints: [CGPoint], hidingSpots: [CGPoint], memory: MonsterMemory) {
@@ -69,6 +70,21 @@ final class DeathAngelAI: SKNode {
         bodySprite.size = CGSize(width: 49 * scaleFactor, height: 51 * scaleFactor)
         bodySprite.anchorPoint = CGPoint(x: 0.5, y: 0.47)
         bodySprite.zPosition = 1
+        if let url = Bundle.main.url(forResource: "DeathAngel", withExtension: "png"),
+           let image = UIImage(contentsOfFile: url.path) {
+            bodySprite.texture = SKTexture(image: image)
+        } else {
+            let fallback = SKShapeNode(ellipseOf: CGSize(width: 27 * scaleFactor, height: 38 * scaleFactor))
+            fallback.fillColor = UIColor(red: 0.37, green: 0.55, blue: 0.67, alpha: 1)
+            fallback.strokeColor = UIColor(red: 0.66, green: 0.86, blue: 0.96, alpha: 0.95)
+            fallback.lineWidth = 1.5 * scaleFactor
+            bodySprite.addChild(fallback)
+            let eye = SKShapeNode(circleOfRadius: 2.2 * scaleFactor)
+            eye.fillColor = UIColor(red: 0.92, green: 0.34, blue: 0.25, alpha: 1)
+            eye.strokeColor = .clear
+            eye.position = CGPoint(x: 0, y: 4 * scaleFactor)
+            bodySprite.addChild(eye)
+        }
         addChild(bodySprite)
 
         let label = SKLabelNode(fontNamed: "AvenirNext-DemiBold")
@@ -94,7 +110,7 @@ final class DeathAngelAI: SKNode {
     }
 
     required init?(coder: NSCoder) {
-        fatalError("DeathAngelAI is created in code.")
+        return nil
     }
 
     func setActive(_ active: Bool) {
@@ -102,8 +118,12 @@ final class DeathAngelAI: SKNode {
         isActive = active
         isHidden = !active
         physicsBody?.collisionBitMask = active ? PhysicsCategory.wall : 0
-        if !active { physicsBody?.velocity = .zero }
+        if !active {
+            physicsBody?.velocity = .zero
+            if wasActive { setState(.dormant) }
+        }
         if active && !wasActive {
+            if state == .dormant { setState(.patrol) }
             if state == .chase {
                 AudioManager.play(.deathAngelScreech, at: position)
             } else if state == .investigate {
@@ -115,12 +135,15 @@ final class DeathAngelAI: SKNode {
     func hear(_ event: NoiseEvent) {
         let distance = pointDistance(event.position, position)
         guard event.radius > 0, distance <= event.radius else { return }
+        let loudSources: Set<NoiseSource> = [.glassBreak, .thrownItem, .loudPickup]
+        let isLoud = loudSources.contains(event.source) || event.radius >= 255 * scaleFactor
+        let meetsWakeThreshold = isLoud || event.radius >= 320 * scaleFactor
+        guard isActive || meetsWakeThreshold else { return }
+        setActive(true)
+        quietElapsed = 0
         lastKnownPosition = event.position
         hasLastKnownPosition = true
         searchWait = 0
-
-        let loudSources: Set<NoiseSource> = [.runningFootstep, .glassBreak, .thrownItem, .loudPickup]
-        let isLoud = loudSources.contains(event.source) || event.radius >= 255 * scaleFactor
         if isLoud {
             setState(.chase)
         } else if state != .chase {
@@ -134,8 +157,15 @@ final class DeathAngelAI: SKNode {
             physicsBody?.velocity = .zero
             return
         }
+        quietElapsed += max(0, delta)
+        if quietElapsed >= 20 {
+            setActive(false)
+            return
+        }
 
         switch state {
+        case .dormant:
+            physicsBody.velocity = .zero
         case .patrol:
             advancePatrol(delta: delta)
         case .investigate:
@@ -218,6 +248,9 @@ final class DeathAngelAI: SKNode {
         state = newState
         onStateChange?(newState)
         switch newState {
+        case .dormant:
+            bodySprite.color = UIColor(red: 0.12, green: 0.20, blue: 0.24, alpha: 1)
+            bodySprite.colorBlendFactor = 0.48
         case .patrol:
             bodySprite.color = .white
             bodySprite.colorBlendFactor = 0
@@ -233,6 +266,13 @@ final class DeathAngelAI: SKNode {
             bodySprite.color = UIColor(red: 0.86, green: 0.72, blue: 0.42, alpha: 1)
             bodySprite.colorBlendFactor = 0.20
         }
+    }
+    func beginFinalHunt(at target: CGPoint) {
+        setActive(true)
+        lastKnownPosition = target
+        hasLastKnownPosition = true
+        quietElapsed = 0
+        setState(.chase)
     }
 }
 
@@ -251,7 +291,7 @@ final class DemogorgonAI: SKNode {
     private let patrolPoints: [CGPoint]
     private let hidingSpots: [CGPoint]
     private let memory: MonsterMemory
-    private let bodySprite = SKSpriteNode(imageNamed: "Demogorgon")
+    private let bodySprite = SKSpriteNode()
     private var patrolIndex = 0
     private var searchTargets: [CGPoint] = []
     private var searchTargetIndex = 0
@@ -279,6 +319,29 @@ final class DemogorgonAI: SKNode {
         bodySprite.size = CGSize(width: 57 * scaleFactor, height: 58 * scaleFactor)
         bodySprite.anchorPoint = CGPoint(x: 0.5, y: 0.46)
         bodySprite.zPosition = 1
+        if let url = Bundle.main.url(forResource: "Demogorgon", withExtension: "png"),
+           let image = UIImage(contentsOfFile: url.path) {
+            bodySprite.texture = SKTexture(image: image)
+        } else {
+            let fallback = SKShapeNode(circleOfRadius: 19 * scaleFactor)
+            fallback.fillColor = UIColor(red: 0.48, green: 0.12, blue: 0.10, alpha: 1)
+            fallback.strokeColor = UIColor(red: 0.97, green: 0.39, blue: 0.27, alpha: 0.95)
+            fallback.lineWidth = 1.5 * scaleFactor
+            bodySprite.addChild(fallback)
+            for offset in [-1.0, 0.0, 1.0] {
+                let petal = SKShapeNode(ellipseOf: CGSize(width: 10 * scaleFactor, height: 22 * scaleFactor))
+                petal.fillColor = UIColor(red: 0.61, green: 0.18, blue: 0.14, alpha: 1)
+                petal.strokeColor = UIColor(red: 0.98, green: 0.49, blue: 0.31, alpha: 0.92)
+                petal.lineWidth = 1 * scaleFactor
+                petal.zRotation = CGFloat(offset) * 0.72
+                petal.position.y = 21 * scaleFactor
+                bodySprite.addChild(petal)
+            }
+            let mouth = SKShapeNode(ellipseOf: CGSize(width: 10 * scaleFactor, height: 13 * scaleFactor))
+            mouth.fillColor = UIColor(red: 0.035, green: 0.008, blue: 0.008, alpha: 1)
+            mouth.strokeColor = .clear
+            bodySprite.addChild(mouth)
+        }
         addChild(bodySprite)
 
         let label = SKLabelNode(fontNamed: "AvenirNext-DemiBold")
@@ -304,7 +367,7 @@ final class DemogorgonAI: SKNode {
     }
 
     required init?(coder: NSCoder) {
-        fatalError("DemogorgonAI is created in code.")
+        return nil
     }
 
     func setActive(_ active: Bool) {
@@ -316,6 +379,15 @@ final class DemogorgonAI: SKNode {
         if active && !wasActive && state == .chase {
             AudioManager.play(.demogorgonGrowl, at: position)
         }
+    }
+
+    func beginFinalHunt(at target: CGPoint) {
+        setActive(true)
+        lastKnownPosition = target
+        hasLastKnownPosition = true
+        lostSightElapsed = 0
+        flareTarget = nil
+        setState(.chase)
     }
 
     /// A hidden player is omitted from sight checks. The Demogorgon may still

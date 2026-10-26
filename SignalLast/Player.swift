@@ -46,7 +46,7 @@ final class Player: SKShapeNode {
     }
 
     required init?(coder: NSCoder) {
-        fatalError("Player is created in code.")
+        return nil
     }
 
     func updateMovement(

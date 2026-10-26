@@ -8,8 +8,11 @@ enum AudioCue {
     case deathAngelScreech
     case demogorgonGrowl
     case distantFootsteps
+    case distantStationAmbience
     case doorRattle
     case flareIgnition
+    case transmissionStart
+    case transmissionComplete
 }
 
 enum AudioManager {
@@ -104,10 +107,16 @@ enum AudioManager {
             return ["demogorgonGrowl", "creature_breath"]
         case .distantFootsteps:
             return ["distant_footsteps", "player_step"]
+        case .distantStationAmbience:
+            return ["station_ambience", "distant_footsteps", "player_step"]
         case .doorRattle:
             return ["door_rattle", "player_step"]
         case .flareIgnition:
             return ["flare_ignition", "player_step"]
+        case .transmissionStart:
+            return ["transmission_start", "door_rattle", "player_step"]
+        case .transmissionComplete:
+            return ["transmission_complete", "creature_breath", "player_step"]
         }
     }
 }

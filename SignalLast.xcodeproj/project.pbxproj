@@ -24,7 +24,10 @@
 		A10000000000000000000011 /* HeartbeatHaptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* HeartbeatHaptics.swift */; };
 		A10000000000000000000012 /* EndingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* EndingView.swift */; };
 		A10000000000000000000013 /* MenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* MenuView.swift */; };
-		A10000000000000000000014 /* GameOverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000014 /* GameOverView.swift */; };
+			A10000000000000000000014 /* GameOverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000014 /* GameOverView.swift */; };
+			A10000000000000000000015 /* LevelData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000015 /* LevelData.swift */; };
+			A10000000000000000000016 /* LevelBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000016 /* LevelBuilder.swift */; };
+		A10000000000000000000017 /* ErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000017 /* ErrorView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -47,7 +50,10 @@
 		A20000000000000000000011 /* HeartbeatHaptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartbeatHaptics.swift; sourceTree = "<group>"; };
 		A20000000000000000000012 /* EndingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndingView.swift; sourceTree = "<group>"; };
 		A20000000000000000000013 /* MenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuView.swift; sourceTree = "<group>"; };
-		A20000000000000000000014 /* GameOverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameOverView.swift; sourceTree = "<group>"; };
+			A20000000000000000000014 /* GameOverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameOverView.swift; sourceTree = "<group>"; };
+			A20000000000000000000015 /* LevelData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelData.swift; sourceTree = "<group>"; };
+			A20000000000000000000016 /* LevelBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelBuilder.swift; sourceTree = "<group>"; };
+		A20000000000000000000017 /* ErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -84,8 +90,11 @@
 				A20000000000000000000011 /* HeartbeatHaptics.swift */,
 				A20000000000000000000012 /* EndingView.swift */,
 				A20000000000000000000013 /* MenuView.swift */,
-				A20000000000000000000014 /* GameOverView.swift */,
-			);
+					A20000000000000000000014 /* GameOverView.swift */,
+					A20000000000000000000015 /* LevelData.swift */,
+					A20000000000000000000016 /* LevelBuilder.swift */,
+				A20000000000000000000017 /* ErrorView.swift */,
+				);
 			path = SignalLast;
 			sourceTree = "<group>";
 		};
@@ -134,8 +143,11 @@
 				A10000000000000000000011 /* HeartbeatHaptics.swift in Sources */,
 				A10000000000000000000012 /* EndingView.swift in Sources */,
 				A10000000000000000000013 /* MenuView.swift in Sources */,
-				A10000000000000000000014 /* GameOverView.swift in Sources */,
-			);
+					A10000000000000000000014 /* GameOverView.swift in Sources */,
+					A10000000000000000000015 /* LevelData.swift in Sources */,
+					A10000000000000000000016 /* LevelBuilder.swift in Sources */,
+				A10000000000000000000017 /* ErrorView.swift in Sources */,
+				);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
@@ -171,8 +183,9 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
 				INFOPLIST_KEY_CFBundleDisplayName = "إشارة أخيرة";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				PRODUCT_BUNDLE_IDENTIFIER = com.signal-last.prototype;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -195,8 +208,9 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
 				INFOPLIST_KEY_CFBundleDisplayName = "إشارة أخيرة";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				PRODUCT_BUNDLE_IDENTIFIER = com.signal-last.prototype;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

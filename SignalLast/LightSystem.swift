@@ -76,6 +76,12 @@ final class FlashlightSystem {
         self.isOn = isOn && self.batteryPercent > 0
     }
 
+    func recharge(by amount: CGFloat) {
+        guard amount > 0 else { return }
+        batteryPercent = min(100, batteryPercent + amount)
+        if batteryPercent > 0 { isOn = true }
+    }
+
     func sacrifice() {
         batteryPercent = 0
         isOn = false
@@ -122,7 +128,7 @@ final class LitFlare: SKNode {
     }
 
     required init?(coder: NSCoder) {
-        fatalError("LitFlare is created in code.")
+        return nil
     }
 
     @discardableResult

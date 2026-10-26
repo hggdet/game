@@ -6,6 +6,8 @@ struct EndingView: View {
     let onRetry: () -> Void
     let onMenu: () -> Void
 
+    @State private var isVisible = false
+
     private var accent: Color {
         switch ending {
         case .earlyEscape: return Color(red: 0.35, green: 0.86, blue: 0.66)
@@ -20,9 +22,9 @@ struct EndingView: View {
         case .earlyEscape:
             return "غادرت قبل اكتمال الأجزاء الخمسة. خرجت حياً، لكن سرّ المحطة ظل حبيساً في الداخل."
         case .stationTruth:
-            return "جمعت الأجزاء الخمسة وأرسلت النداء. لم تكن المحطة مهجورة كما ظننت؛ كانت تنتظر من يعيد تشغيل الإشارة."
+            return "جمعت الأجزاء الخمسة وأكملت الإرسال. لم تكن المحطة مهجورة كما ظننت؛ كانت تنتظر من يعيد تشغيل الإشارة."
         case .tragic where state.savedSurvivor:
-            return "اخترت ألا تترك الناجي خلفك. خرجتما معاً، لكن خطواته المذعورة أعادت Death Angel إلى أثرِكما."
+            return "اخترت ألا تترك الناجي خلفك. خرجتما معاً، لكن خطواته المذعورة أعادت Death Angel إلى أثركما."
         case .tragic where state.sacrificedLight:
             return "ضحّيت بالمصباح كي تمر الإشارة. انطفأ آخر ضوء في المحطة، وسمعت شيئاً يتحرك في العتمة."
         case .tragic:
@@ -38,10 +40,23 @@ struct EndingView: View {
             return "نجاة قصيرة · \(state.collectedParts) من ٥ أجزاء"
         case .stationTruth:
             return "اكتمل النداء · \(state.points) نقطة"
+        case .tragic where state.savedSurvivor:
+            return "اختيارك: إنقاذ الناجي"
+        case .tragic where state.sacrificedLight:
+            return "اختيارك: التضحية بالضوء"
         case .tragic:
-            return state.savedSurvivor ? "اختيارك: إنقاذ الناجي" : "اختيارك: التضحية بالضوء"
+            return "نهاية بثمنٍ باهظ"
         case .ambiguous:
             return "النهاية غير محسومة · صمت على الموجة"
+        }
+    }
+
+    private var ordinal: String {
+        switch ending {
+        case .earlyEscape: return "الأولى"
+        case .stationTruth: return "الثانية"
+        case .tragic: return "الثالثة"
+        case .ambiguous: return "الرابعة"
         }
     }
 
@@ -57,10 +72,11 @@ struct EndingView: View {
                 .frame(width: 290, height: 290)
                 .blur(radius: 88)
                 .offset(y: -210)
+                .allowsHitTesting(false)
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
-                    Spacer(minLength: 64)
+                    Spacer(minLength: 54)
                     Image(systemName: ending.symbol)
                         .font(.system(size: 42, weight: .light))
                         .foregroundStyle(accent)
@@ -68,37 +84,43 @@ struct EndingView: View {
                         .background(accent.opacity(0.11), in: Circle())
                         .overlay(Circle().stroke(accent.opacity(0.35), lineWidth: 1))
                         .shadow(color: accent.opacity(0.25), radius: 24)
-                        .padding(.bottom, 28)
+                        .padding(.bottom, 27)
+                        .opacity(isVisible ? 1 : 0)
+                        .animation(.easeInOut(duration: 1.8), value: isVisible)
 
-                    Text("النهاية \(ending == .earlyEscape ? "الأولى" : ending == .stationTruth ? "الثانية" : ending == .tragic ? "الثالثة" : "الرابعة")")
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .tracking(1)
-                        .foregroundStyle(accent.opacity(0.88))
-                        .padding(.bottom, 9)
-                    Text(ending.title)
-                        .font(.system(size: 30, weight: .heavy, design: .rounded))
-                        .foregroundStyle(.white)
-                        .multilineTextAlignment(.center)
-                    Text(detail)
-                        .font(.system(size: 12, weight: .semibold, design: .rounded))
-                        .foregroundStyle(accent.opacity(0.85))
-                        .padding(.top, 12)
+                    VStack(spacing: 0) {
+                        Text("النهاية \(ordinal)")
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .tracking(1)
+                            .foregroundStyle(accent.opacity(0.88))
+                            .padding(.bottom, 9)
+                        Text(ending.title)
+                            .font(.system(size: 30, weight: .heavy, design: .rounded))
+                            .foregroundStyle(.white)
+                            .multilineTextAlignment(.center)
+                        Text(detail)
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .foregroundStyle(accent.opacity(0.85))
+                            .padding(.top, 12)
+                        Text(narrative)
+                            .font(.system(size: 16, weight: .medium, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.83))
+                            .multilineTextAlignment(.center)
+                            .lineSpacing(6)
+                            .padding(.horizontal, 32)
+                            .padding(.top, 25)
 
-                    Text(narrative)
-                        .font(.system(size: 16, weight: .medium, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.83))
-                        .multilineTextAlignment(.center)
-                        .lineSpacing(6)
-                        .padding(.horizontal, 32)
-                        .padding(.top, 25)
-
-                    VStack(spacing: 11) {
-                        actionButton("محاولة جديدة", symbol: "arrow.counterclockwise", primary: true, action: onRetry)
-                        actionButton("العودة إلى القائمة", symbol: "line.3.horizontal", primary: false, action: onMenu)
+                        VStack(spacing: 11) {
+                            actionButton("محاولة جديدة", symbol: "arrow.counterclockwise", primary: true, action: onRetry)
+                            actionButton("العودة إلى القائمة", symbol: "line.3.horizontal", primary: false, action: onMenu)
+                        }
+                        .padding(.horizontal, 30)
+                        .padding(.top, 36)
+                        .padding(.bottom, 34)
                     }
-                    .padding(.horizontal, 30)
-                    .padding(.top, 38)
-                    .padding(.bottom, 36)
+                    .opacity(isVisible ? 1 : 0)
+                    .offset(y: isVisible ? 0 : 12)
+                    .animation(.easeInOut(duration: 2.4).delay(0.3), value: isVisible)
                     Spacer(minLength: 24)
                 }
                 .frame(maxWidth: 540)
@@ -107,6 +129,11 @@ struct EndingView: View {
         }
         .environment(\.layoutDirection, .rightToLeft)
         .preferredColorScheme(.dark)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 2.4).delay(0.15)) {
+                isVisible = true
+            }
+        }
     }
 
     private func actionButton(_ title: String, symbol: String, primary: Bool, action: @escaping () -> Void) -> some View {
