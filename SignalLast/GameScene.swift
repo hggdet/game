@@ -572,9 +572,9 @@ final class GameScene: SKScene {
 
     private func addTutorialSigns() {
         guard let entrance = worldLevelData.room(id: "entrance") else { return }
-        addLabel("حرّك العصا للتسلّل أو المشي", at: CGPoint(x: entrance.midX, y: entrance.maxY - 50 * scaleFactor), size: 12 * scaleFactor, color: UIColor(red: 0.72, green: 0.91, blue: 0.93, alpha: 0.92))
-        addLabel("اضغط مطولاً على «ركض» — الصوت يجذب الخطر", at: CGPoint(x: entrance.midX, y: entrance.maxY - 72 * scaleFactor), size: 9 * scaleFactor, color: UIColor(red: 0.75, green: 0.82, blue: 0.83, alpha: 0.82))
-        addLabel("المصباح · الرمي · الاختباء · الإنقاذ", at: CGPoint(x: entrance.midX, y: entrance.maxY - 91 * scaleFactor), size: 8.5 * scaleFactor, color: UIColor(red: 0.68, green: 0.81, blue: 0.83, alpha: 0.75))
+        addLabel("حرّك العصا للتسلّل أو المشي", at: CGPoint(x: entrance.rect.midX, y: entrance.rect.maxY - 50 * scaleFactor), size: 12 * scaleFactor, color: UIColor(red: 0.72, green: 0.91, blue: 0.93, alpha: 0.92))
+        addLabel("اضغط مطولاً على «ركض» — الصوت يجذب الخطر", at: CGPoint(x: entrance.rect.midX, y: entrance.rect.maxY - 72 * scaleFactor), size: 9 * scaleFactor, color: UIColor(red: 0.75, green: 0.82, blue: 0.83, alpha: 0.82))
+        addLabel("المصباح · الرمي · الاختباء · الإنقاذ", at: CGPoint(x: entrance.rect.midX, y: entrance.rect.maxY - 91 * scaleFactor), size: 8.5 * scaleFactor, color: UIColor(red: 0.68, green: 0.81, blue: 0.83, alpha: 0.75))
     }
 
     private func addEmergencyExit(at point: CGPoint, title: String) {
