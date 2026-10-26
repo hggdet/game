@@ -23,12 +23,14 @@ enum NoiseSurface: String, Equatable {
     }
 }
 
-enum NoiseSource: String, Equatable {
+enum NoiseSource: String, Hashable {
     case footstep
     case runningFootstep
     case glassBreak
     case thrownItem
     case loudPickup
+    case breathing
+    case survivorFootstep
 }
 
 struct NoiseEvent: Equatable, Identifiable {

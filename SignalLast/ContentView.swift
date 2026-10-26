@@ -1,12 +1,78 @@
 import SwiftUI
 import SpriteKit
+import UIKit
 
 struct ContentView: View {
+    private enum Screen: Equatable { case menu, game, ending, gameOver }
+
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var screen: Screen = .menu
     @State private var snapshot = GameSnapshot()
+    @State private var liveState = GameState()
     @State private var joystickValue = CGSize.zero
     @State private var gameScene = GameScene(size: CGSize(width: 390, height: 844))
+    @State private var sprintResetToken = 0
+    @State private var volume = GameStateStore.loadPreferences().volume
+    @State private var hapticsEnabled = GameStateStore.loadPreferences().hapticsEnabled
+
+    private var hasContinue: Bool {
+        GameStateStore.loadGame()?.isResumable ?? false
+    }
 
     var body: some View {
+        Group {
+            switch screen {
+            case .menu:
+                MenuView(
+                    hasContinue: hasContinue,
+                    volume: $volume,
+                    hapticsEnabled: $hapticsEnabled,
+                    onStart: startNewGame,
+                    onContinue: continueGame
+                )
+            case .game:
+                gameBoard
+            case .ending:
+                if let ending = snapshot.ending ?? liveState.ending {
+                    EndingView(ending: ending, state: liveState, onRetry: startNewGame, onMenu: returnToMenu)
+                } else {
+                    MenuView(hasContinue: hasContinue, volume: $volume, hapticsEnabled: $hapticsEnabled, onStart: startNewGame, onContinue: continueGame)
+                }
+            case .gameOver:
+                GameOverView(onRetry: startNewGame, onMenu: returnToMenu)
+            }
+        }
+        .animation(.easeInOut(duration: 0.25), value: screen)
+        .preferredColorScheme(.dark)
+        .onChange(of: joystickValue) { _, value in
+            let limit: CGFloat = 42
+            gameScene.setMovementInput(CGVector(dx: value.width / limit, dy: value.height / limit))
+        }
+        .onChange(of: volume) { _, value in
+            var preferences = GameStateStore.loadPreferences()
+            preferences.volume = value
+            GameStateStore.savePreferences(preferences)
+            AudioManager.setVolume(Float(value))
+        }
+        .onChange(of: hapticsEnabled) { _, value in
+            var preferences = GameStateStore.loadPreferences()
+            preferences.hapticsEnabled = value
+            GameStateStore.savePreferences(preferences)
+            gameScene.setHapticsEnabled(value)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase != .active { gameScene.flushProgress() }
+        }
+        .onAppear {
+            configureSceneCallbacks()
+            AudioManager.setVolume(Float(volume))
+            gameScene.setHapticsEnabled(hapticsEnabled)
+            if let saved = GameStateStore.loadGame() { liveState = saved }
+            gameScene.publishSnapshotNow()
+        }
+    }
+
+    private var gameBoard: some View {
         GeometryReader { geometry in
             ZStack {
                 SpriteView(scene: gameScene, options: [.ignoresSiblingOrder])
@@ -14,47 +80,86 @@ struct ContentView: View {
                     .accessibilityLabel("غرفة المحطة المهجورة")
 
                 VStack(spacing: 0) {
-                    hud
-                        .padding(.top, geometry.safeAreaInsets.top + 8)
-                    Spacer(minLength: 18)
-                    controls
-                        .padding(.bottom, geometry.safeAreaInsets.bottom + 10)
+                    hud.padding(.top, geometry.safeAreaInsets.top + 8)
+                    Spacer(minLength: 12)
+                    controls.padding(.bottom, geometry.safeAreaInsets.bottom + 8)
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 14)
+
+                if snapshot.isFinalChoicePending {
+                    finalChoiceCard
+                        .padding(.horizontal, 24)
+                        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                        .zIndex(3)
+                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.black)
             .environment(\.layoutDirection, .rightToLeft)
         }
-        .preferredColorScheme(.dark)
-        .onChange(of: joystickValue) { _, value in
-            let limit: CGFloat = 42
-            gameScene.setMovementInput(CGVector(dx: value.width / limit, dy: value.height / limit))
+        .onAppear { configureSceneCallbacks() }
+    }
+
+    private func configureSceneCallbacks() {
+        gameScene.onSnapshot = { newSnapshot in
+            snapshot = newSnapshot
+            if newSnapshot.didLose { screen = .gameOver }
+            else if newSnapshot.ending != nil { screen = .ending }
+            else if screen != .menu { screen = .game }
         }
-        .onAppear {
-            gameScene.onSnapshot = { newSnapshot in
-                snapshot = newSnapshot
-            }
-            gameScene.publishSnapshotNow()
+        gameScene.onProgress = { newState in
+            liveState = newState
+            GameStateStore.saveGame(newState)
         }
     }
 
+    private func startNewGame() {
+        joystickValue = .zero
+        sprintResetToken += 1
+        configureSceneCallbacks()
+        screen = .game
+        gameScene.startNewGame()
+    }
+
+    private func continueGame() {
+        guard let saved = GameStateStore.loadGame(), saved.isResumable else { return }
+        joystickValue = .zero
+        sprintResetToken += 1
+        liveState = saved
+        configureSceneCallbacks()
+        screen = .game
+        gameScene.loadGame(saved)
+    }
+
+    private func returnToMenu() {
+        gameScene.flushProgress()
+        joystickValue = .zero
+        screen = .menu
+    }
+
     private var hud: some View {
-        VStack(alignment: .leading, spacing: 11) {
+        VStack(alignment: .leading, spacing: 9) {
             HStack(alignment: .top, spacing: 10) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("إشارة أخيرة")
-                        .font(.system(size: 22, weight: .heavy, design: .rounded))
+                        .font(.system(size: 21, weight: .heavy, design: .rounded))
                         .foregroundStyle(Color(red: 0.88, green: 0.95, blue: 0.98))
                     Text("المحطة 09 · القطاع الشرقي")
                         .font(.system(size: 10, weight: .medium, design: .monospaced))
                         .foregroundStyle(.white.opacity(0.58))
                 }
                 Spacer(minLength: 4)
+                Button(action: returnToMenu) {
+                    Image(systemName: "line.3.horizontal")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.84))
+                        .frame(width: 38, height: 38)
+                        .background(.white.opacity(0.09), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("القائمة الرئيسية")
                 Button {
-                    joystickValue = .zero
-                    gameScene.setSprintActive(false)
-                    gameScene.restart()
+                    startNewGame()
                 } label: {
                     Image(systemName: "arrow.counterclockwise")
                         .font(.system(size: 14, weight: .bold))
@@ -66,30 +171,84 @@ struct ContentView: View {
                 .accessibilityLabel("إعادة اللعب")
             }
 
-            HStack(spacing: 8) {
+            HStack(spacing: 7) {
                 statusCard(title: "الحركة", value: snapshot.playerSpeed.arabicTitle, symbol: "figure.walk")
                 statusCard(title: "Death Angel", value: snapshot.deathAngelState.arabicTitle, symbol: "ear.fill")
-                statusCard(title: "الأرض", value: snapshot.surface.arabicTitle, symbol: "square.grid.3x3.fill")
+                statusCard(title: "Demogorgon", value: snapshot.demogorgonState.arabicTitle, symbol: "eye.fill")
             }
 
-            HStack(spacing: 8) {
+            HStack(spacing: 9) {
                 Image(systemName: "waveform.path")
                     .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(snapshot.noiseIntensity > 0.55 ? .orange : .cyan)
                 ProgressView(value: snapshot.noiseIntensity, total: 1)
                     .tint(snapshot.noiseIntensity > 0.55 ? .orange : .cyan)
-                Text("أثر الصوت")
-                    .font(.system(size: 10, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.76))
+                Text("الصوت")
+                    .font(.system(size: 9, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.72))
+                Text(snapshot.pressurePhase.arabicTitle)
+                    .font(.system(size: 9, weight: .bold, design: .rounded))
+                    .foregroundStyle(pressureColor)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 4)
+                    .background(pressureColor.opacity(0.13), in: Capsule())
             }
 
-            Text(snapshot.statusMessage)
-                .font(.system(size: 11, weight: .semibold, design: .rounded))
-                .foregroundStyle(.white.opacity(0.85))
-                .lineLimit(2)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            HStack(spacing: 8) {
+                Label("الأجزاء \(snapshot.collectedParts)/\(snapshot.totalParts)", systemImage: "diamond.fill")
+                    .foregroundStyle(.cyan)
+                Spacer(minLength: 2)
+                Text("النقاط \(snapshot.points)")
+                    .foregroundStyle(.white.opacity(0.86))
+                Spacer(minLength: 2)
+                Label("رميات \(snapshot.throwItemsRemaining)", systemImage: "circle.grid.cross.fill")
+                    .foregroundStyle(snapshot.throwItemsRemaining > 0 ? .white.opacity(0.86) : .orange)
+            }
+            .font(.system(size: 9, weight: .bold, design: .rounded).monospacedDigit())
+
+            HStack(spacing: 8) {
+                Image(systemName: snapshot.isHoldingBreath ? "lungs.fill" : "wind")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(snapshot.breathMeter > 0.72 ? .orange : .cyan)
+                ProgressView(value: min(max(snapshot.breathMeter, 0), 1), total: 1)
+                    .tint(snapshot.breathMeter > 0.72 ? .orange : .cyan)
+                Text(snapshot.isHiding ? (snapshot.isHoldingBreath ? "كتم النفس" : "النفس مكشوف") : "النفس")
+                    .font(.system(size: 9, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.78))
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("مقياس ضغط النفس \(Int(snapshot.breathMeter * 100)) بالمئة")
+
+            HStack(spacing: 8) {
+                Image(systemName: snapshot.flashlightOn ? "flashlight.on.fill" : "flashlight.off.fill")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(snapshot.batteryPercent < 20 ? .orange : .yellow)
+                ProgressView(value: snapshot.batteryPercent, total: 100)
+                    .tint(snapshot.batteryPercent < 20 ? .orange : .yellow)
+                Text("\(Int(snapshot.batteryPercent.rounded()))٪")
+                    .font(.system(size: 10, weight: .bold, design: .rounded).monospacedDigit())
+                    .foregroundStyle(.white.opacity(0.88))
+                    .frame(minWidth: 34, alignment: .trailing)
+                Text(snapshot.flashlightLevel.arabicTitle)
+                    .font(.system(size: 9, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.70))
+            }
+
+            HStack(spacing: 5) {
+                Text(snapshot.statusMessage)
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.88))
+                    .lineLimit(2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                if snapshot.flareSecondsRemaining > 0 {
+                    Label("\(Int(snapshot.flareSecondsRemaining))ث", systemImage: "flame.fill")
+                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                        .foregroundStyle(.orange)
+                        .fixedSize()
+                }
+            }
         }
-        .padding(14)
+        .padding(12)
         .background {
             RoundedRectangle(cornerRadius: 19, style: .continuous)
                 .fill(Color(red: 0.025, green: 0.045, blue: 0.061).opacity(0.94))
@@ -100,54 +259,144 @@ struct ContentView: View {
         }
     }
 
-    private func statusCard(title: String, value: String, symbol: String) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            HStack(spacing: 4) {
+    private var finalChoiceCard: some View {
+        VStack(spacing: 13) {
+            Image(systemName: "antenna.radiowaves.left.and.right")
+                .font(.system(size: 28, weight: .bold))
+                .foregroundStyle(.cyan)
+            Text("اكتملت الأجزاء الخمسة")
+                .font(.system(size: 21, weight: .heavy, design: .rounded))
+                .foregroundStyle(.white)
+                .multilineTextAlignment(.center)
+            Text("يمكنك إرسال الحقيقة الآن، أو التضحية بآخر ضوء لفتح طريق مأساوي.")
+                .font(.system(size: 13, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.79))
+                .multilineTextAlignment(.center)
+                .lineSpacing(3)
+            decisionButton("أرسل إشارة المحطة", symbol: "waveform", tint: .cyan) {
+                gameScene.chooseStationTruth()
+            }
+            decisionButton("ضحِّ بالمصباح", symbol: "flashlight.off.fill", tint: .orange) {
+                gameScene.chooseSacrificeLight()
+            }
+            Text("إن أنقذت الناجي، تتغير النهاية تلقائياً.")
+                .font(.system(size: 10, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.55))
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity)
+        .background {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(Color(red: 0.025, green: 0.045, blue: 0.061).opacity(0.98))
+                .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(.cyan.opacity(0.38), lineWidth: 1))
+        }
+        .shadow(color: .black.opacity(0.5), radius: 22, y: 9)
+    }
+
+    private func decisionButton(_ title: String, symbol: String, tint: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
                 Image(systemName: symbol)
-                    .font(.system(size: 9, weight: .bold))
-                Text(title)
-                    .font(.system(size: 9, weight: .medium, design: .rounded))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
+                Text(title).font(.system(size: 13, weight: .bold, design: .rounded))
+            }
+            .foregroundStyle(tint)
+            .frame(maxWidth: .infinity)
+            .frame(height: 44)
+            .background(tint.opacity(0.11), in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous).stroke(tint.opacity(0.34), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var pressureColor: Color {
+        switch snapshot.pressurePhase {
+        case .calm: return .cyan
+        case .buildUp: return .yellow
+        case .attack: return .red
+        case .retreat: return .green
+        }
+    }
+
+    private func statusCard(title: String, value: String, symbol: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 4) {
+                Image(systemName: symbol).font(.system(size: 9, weight: .bold))
+                Text(title).font(.system(size: 8, weight: .medium, design: .rounded)).lineLimit(1).minimumScaleFactor(0.72)
             }
             .foregroundStyle(.white.opacity(0.53))
             Text(value)
-                .font(.system(size: 12, weight: .bold, design: .rounded))
+                .font(.system(size: 11, weight: .bold, design: .rounded))
                 .foregroundStyle(.white.opacity(0.94))
                 .lineLimit(1)
+                .minimumScaleFactor(0.72)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 9)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 7)
         .background(.white.opacity(0.065), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private var controls: some View {
-        HStack(alignment: .center, spacing: 18) {
+        HStack(alignment: .center, spacing: 9) {
             VirtualJoystick { vector in
                 let maxRadius: CGFloat = 42
                 joystickValue = CGSize(width: vector.dx * maxRadius, height: vector.dy * maxRadius)
             }
-            .accessibilityLabel("عصا الحركة الافتراضية")
-
-            Spacer(minLength: 4)
-
-            VStack(spacing: 9) {
-                SprintButton { active in
-                    gameScene.setSprintActive(active)
+            Spacer(minLength: 0)
+            VStack(spacing: 7) {
+                HStack(spacing: 6) {
+                    ControlActionButton(title: snapshot.flashlightOn ? "إطفاء" : "مصباح", symbol: snapshot.flashlightOn ? "flashlight.off.fill" : "flashlight.on.fill", tint: .yellow) {
+                        gameScene.toggleFlashlight()
+                    }
+                    ControlActionButton(title: "المستوى", symbol: "circle.lefthalf.filled", tint: .cyan) {
+                        gameScene.cycleFlashlightLevel()
+                    }
                 }
-                Text("العصا: خفيف = تسلّل · قوي = مشي")
-                    .font(.system(size: 9, weight: .medium, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.74))
+                HStack(spacing: 6) {
+                    ControlActionButton(title: "فلير", symbol: "flame.fill", tint: .orange) {
+                        gameScene.placeFlare()
+                    }
+                    ControlActionButton(title: "رمي \(snapshot.throwItemsRemaining)", symbol: "arrow.up.forward", tint: .white, enabled: snapshot.throwItemsRemaining > 0 && !snapshot.didFinish) {
+                        gameScene.throwNoiseItem()
+                    }
+                }
+                HStack(spacing: 6) {
+                    ControlActionButton(title: snapshot.isHiding ? "خروج" : "اختباء", symbol: snapshot.isHiding ? "door.left.hand.open" : "cabinet.fill", tint: .cyan, enabled: snapshot.canHide && !snapshot.didFinish) {
+                        gameScene.toggleHiding()
+                    }
+                    ControlActionButton(title: snapshot.survivorFollowing ? "يتبعك" : "إنقاذ", symbol: snapshot.survivorFollowing ? "figure.2" : "figure.2.and.child.holdinghands", tint: .orange, enabled: snapshot.canRescueSurvivor && !snapshot.didFinish) {
+                        gameScene.rescueSurvivor()
+                    }
+                }
+                if snapshot.isHiding {
+                    ControlActionButton(
+                        title: snapshot.isWaitingInHiding ? "انتظر \(Int(ceil(snapshot.hideWaitRemaining)))ث" : "انتظر النهاية",
+                        symbol: "waveform.slash",
+                        tint: .purple,
+                        enabled: !snapshot.isWaitingInHiding && !snapshot.didFinish
+                    ) {
+                        gameScene.waitInHidingUntilSignalFades()
+                    }
+                } else if snapshot.canEscapeEarly {
+                    ControlActionButton(title: "اهرب الآن", symbol: "door.left.hand.open", tint: .green, enabled: !snapshot.didFinish) {
+                        gameScene.escapeEarly()
+                    }
+                }
+                HoldBreathButton(isHiding: snapshot.isHiding, isHolding: snapshot.isHoldingBreath) { active in
+                    gameScene.setHoldingBreath(active)
+                }
+                .frame(width: 152)
+                SprintButton { active in gameScene.setSprintActive(active) }
+                    .id(sprintResetToken)
+                Text("الركض والناجي يصدران صوتاً · المصباح يجذب Demogorgon")
+                    .font(.system(size: 8, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.70))
                     .multilineTextAlignment(.center)
-                    .frame(maxWidth: 156)
-                Text("الركض يصدر صوتاً عالياً")
-                    .font(.system(size: 9, weight: .bold, design: .rounded))
-                    .foregroundStyle(Color.orange.opacity(0.91))
+                    .frame(maxWidth: 166)
             }
         }
-        .padding(.horizontal, 13)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 10)
         .frame(maxWidth: .infinity)
         .environment(\.layoutDirection, .leftToRight)
         .background {
@@ -161,24 +410,76 @@ struct ContentView: View {
     }
 }
 
+private struct ControlActionButton: View {
+    let title: String
+    let symbol: String
+    let tint: Color
+    var enabled = true
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 2) {
+                Image(systemName: symbol).font(.system(size: 13, weight: .bold))
+                Text(title).font(.system(size: 8, weight: .bold, design: .rounded)).lineLimit(1)
+            }
+            .foregroundStyle(tint)
+            .frame(width: 73, height: 36)
+            .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous).stroke(.white.opacity(0.12), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled)
+        .opacity(enabled ? 1 : 0.42)
+    }
+}
+
+private struct HoldBreathButton: View {
+    let isHiding: Bool
+    let isHolding: Bool
+    let onHold: (Bool) -> Void
+
+    var body: some View {
+        HStack(spacing: 7) {
+            Image(systemName: isHolding ? "lungs.fill" : "wind")
+                .font(.system(size: 14, weight: .bold))
+            Text(isHolding ? "تحبس أنفاسك…" : "اضغط مطولاً لكتم النفس")
+                .font(.system(size: 9, weight: .bold, design: .rounded))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+        .foregroundStyle(isHolding ? Color.cyan : Color.white.opacity(0.85))
+        .frame(height: 34)
+        .frame(maxWidth: .infinity)
+        .background(isHolding ? Color.cyan.opacity(0.16) : Color.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous).stroke(isHolding ? Color.cyan.opacity(0.5) : Color.white.opacity(0.12), lineWidth: 1))
+        .contentShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in onHold(true) }
+                .onEnded { _ in onHold(false) }
+        )
+        .disabled(!isHiding)
+        .opacity(isHiding ? 1 : 0.42)
+        .onDisappear { onHold(false) }
+        .accessibilityLabel(isHiding ? "اضغط مطولاً لحبس النفس" : "ادخل خزانة لاستخدام كتم النفس")
+    }
+}
+
 private struct VirtualJoystick: View {
     let onChange: (CGVector) -> Void
     @State private var knobOffset = CGSize.zero
-    private let diameter: CGFloat = 116
+    private let diameter: CGFloat = 105
     private let travel: CGFloat = 42
 
     var body: some View {
         ZStack {
-            Circle()
-                .fill(Color.white.opacity(0.07))
-                .overlay(Circle().stroke(.white.opacity(0.18), lineWidth: 1))
-            Circle()
-                .stroke(Color.white.opacity(0.12), style: StrokeStyle(lineWidth: 1, dash: [4, 5]))
-                .frame(width: diameter * 0.58, height: diameter * 0.58)
+            Circle().fill(Color.white.opacity(0.07)).overlay(Circle().stroke(.white.opacity(0.18), lineWidth: 1))
+            Circle().stroke(Color.white.opacity(0.12), style: StrokeStyle(lineWidth: 1, dash: [4, 5])).frame(width: diameter * 0.58, height: diameter * 0.58)
             Circle()
                 .fill(Color(red: 0.23, green: 0.69, blue: 0.77).opacity(0.80))
                 .overlay(Circle().stroke(.white.opacity(0.46), lineWidth: 1))
-                .frame(width: 43, height: 43)
+                .frame(width: 41, height: 41)
                 .shadow(color: .cyan.opacity(0.22), radius: 8)
                 .offset(knobOffset)
         }
@@ -195,12 +496,11 @@ private struct VirtualJoystick: View {
                     onChange(CGVector(dx: offset.width / travel, dy: -offset.height / travel))
                 }
                 .onEnded { _ in
-                    withAnimation(.easeOut(duration: 0.12)) {
-                        knobOffset = .zero
-                    }
+                    withAnimation(.easeOut(duration: 0.12)) { knobOffset = .zero }
                     onChange(.zero)
                 }
         )
+        .accessibilityLabel("عصا الحركة الافتراضية")
     }
 }
 
@@ -213,25 +513,28 @@ private struct SprintButton: View {
     @State private var isToggled = false
 
     var body: some View {
-        VStack(spacing: 5) {
+        HStack(spacing: 7) {
             Image(systemName: isHolding || isToggled ? "figure.run" : "figure.run.circle.fill")
-                .font(.system(size: 22, weight: .bold))
+                .font(.system(size: 17, weight: .bold))
             Text(isHolding || isToggled ? "الركض مفعّل" : "ركض")
-                .font(.system(size: 12, weight: .bold, design: .rounded))
+                .font(.system(size: 11, weight: .bold, design: .rounded))
         }
         .foregroundStyle(isHolding || isToggled ? Color.orange : Color.white.opacity(0.92))
-        .frame(width: 126, height: 72)
-        .background(isHolding || isToggled ? Color.orange.opacity(0.16) : Color.white.opacity(0.09), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(isHolding || isToggled ? Color.orange.opacity(0.52) : Color.white.opacity(0.13), lineWidth: 1)
-        }
-        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .frame(maxWidth: .infinity)
+        .frame(height: 40)
+        .background(isHolding || isToggled ? Color.orange.opacity(0.16) : Color.white.opacity(0.09), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(isHolding || isToggled ? Color.orange.opacity(0.52) : Color.white.opacity(0.13), lineWidth: 1))
+        .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .gesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in beginPressIfNeeded() }
                 .onEnded { _ in endPress() }
         )
+        .onDisappear {
+            holdWorkItem?.cancel()
+            holdWorkItem = nil
+            onSprint(false)
+        }
         .accessibilityLabel("زر الركض: اضغط مطولاً أو انقر مرتين للتبديل")
     }
 
@@ -250,14 +553,12 @@ private struct SprintButton: View {
     private func endPress() {
         holdWorkItem?.cancel()
         holdWorkItem = nil
-
         if isHolding {
             isHolding = false
             onSprint(isToggled)
             pressBeganAt = nil
             return
         }
-
         let now = Date()
         if let previousTap = lastTapAt, now.timeIntervalSince(previousTap) <= 0.34 {
             isToggled.toggle()
