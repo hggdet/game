@@ -17,6 +17,14 @@
 		A10000000000000000000009 /* DeathAngel.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000009 /* DeathAngel.png */; };
 		A1000000000000000000000A /* player_step.wav in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000A /* player_step.wav */; };
 		A1000000000000000000000B /* creature_breath.wav in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000B /* creature_breath.wav */; };
+		A1000000000000000000000C /* LightSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000D /* LightSystem.swift */; };
+		A1000000000000000000000D /* MonsterDirector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000E /* MonsterDirector.swift */; };
+		A1000000000000000000000E /* Demogorgon.png in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000F /* Demogorgon.png */; };
+		A10000000000000000000010 /* PhaseThreeEntities.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* PhaseThreeEntities.swift */; };
+		A10000000000000000000011 /* HeartbeatHaptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* HeartbeatHaptics.swift */; };
+		A10000000000000000000012 /* EndingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* EndingView.swift */; };
+		A10000000000000000000013 /* MenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* MenuView.swift */; };
+		A10000000000000000000014 /* GameOverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000014 /* GameOverView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +40,14 @@
 		A2000000000000000000000A /* player_step.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = Resources/player_step.wav; sourceTree = "<group>"; };
 		A2000000000000000000000B /* creature_breath.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = Resources/creature_breath.wav; sourceTree = "<group>"; };
 		A2000000000000000000000C /* SignalLast.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SignalLast.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A2000000000000000000000D /* LightSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LightSystem.swift; sourceTree = "<group>"; };
+		A2000000000000000000000E /* MonsterDirector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonsterDirector.swift; sourceTree = "<group>"; };
+		A2000000000000000000000F /* Demogorgon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Resources/Demogorgon.png; sourceTree = "<group>"; };
+		A20000000000000000000010 /* PhaseThreeEntities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhaseThreeEntities.swift; sourceTree = "<group>"; };
+		A20000000000000000000011 /* HeartbeatHaptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartbeatHaptics.swift; sourceTree = "<group>"; };
+		A20000000000000000000012 /* EndingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndingView.swift; sourceTree = "<group>"; };
+		A20000000000000000000013 /* MenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuView.swift; sourceTree = "<group>"; };
+		A20000000000000000000014 /* GameOverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameOverView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,6 +77,14 @@
 				A20000000000000000000009 /* DeathAngel.png */,
 				A2000000000000000000000A /* player_step.wav */,
 				A2000000000000000000000B /* creature_breath.wav */,
+				A2000000000000000000000D /* LightSystem.swift */,
+				A2000000000000000000000E /* MonsterDirector.swift */,
+				A2000000000000000000000F /* Demogorgon.png */,
+				A20000000000000000000010 /* PhaseThreeEntities.swift */,
+				A20000000000000000000011 /* HeartbeatHaptics.swift */,
+				A20000000000000000000012 /* EndingView.swift */,
+				A20000000000000000000013 /* MenuView.swift */,
+				A20000000000000000000014 /* GameOverView.swift */,
 			);
 			path = SignalLast;
 			sourceTree = "<group>";
@@ -104,6 +128,13 @@
 				A10000000000000000000006 /* NoiseSystem.swift in Sources */,
 				A10000000000000000000007 /* MonsterAI.swift in Sources */,
 				A10000000000000000000008 /* AudioManager.swift in Sources */,
+				A1000000000000000000000C /* LightSystem.swift in Sources */,
+				A1000000000000000000000D /* MonsterDirector.swift in Sources */,
+				A10000000000000000000010 /* PhaseThreeEntities.swift in Sources */,
+				A10000000000000000000011 /* HeartbeatHaptics.swift in Sources */,
+				A10000000000000000000012 /* EndingView.swift in Sources */,
+				A10000000000000000000013 /* MenuView.swift in Sources */,
+				A10000000000000000000014 /* GameOverView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -117,6 +148,7 @@
 				A10000000000000000000009 /* DeathAngel.png in Resources */,
 				A1000000000000000000000A /* player_step.wav in Resources */,
 				A1000000000000000000000B /* creature_breath.wav in Resources */,
+				A1000000000000000000000E /* Demogorgon.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
