@@ -1,0 +1,220 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10000000000000000000001 /* SignalLastApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* SignalLastApp.swift */; };
+		A10000000000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* ContentView.swift */; };
+		A10000000000000000000003 /* GameScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* GameScene.swift */; };
+		A10000000000000000000004 /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* GameState.swift */; };
+		A10000000000000000000005 /* Player.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000005 /* Player.swift */; };
+		A10000000000000000000006 /* NoiseSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000006 /* NoiseSystem.swift */; };
+		A10000000000000000000007 /* MonsterAI.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000007 /* MonsterAI.swift */; };
+		A10000000000000000000008 /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000008 /* AudioManager.swift */; };
+		A10000000000000000000009 /* DeathAngel.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000009 /* DeathAngel.png */; };
+		A1000000000000000000000A /* player_step.wav in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000A /* player_step.wav */; };
+		A1000000000000000000000B /* creature_breath.wav in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000B /* creature_breath.wav */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A20000000000000000000001 /* SignalLastApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalLastApp.swift; sourceTree = "<group>"; };
+		A20000000000000000000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A20000000000000000000003 /* GameScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameScene.swift; sourceTree = "<group>"; };
+		A20000000000000000000004 /* GameState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameState.swift; sourceTree = "<group>"; };
+		A20000000000000000000005 /* Player.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Player.swift; sourceTree = "<group>"; };
+		A20000000000000000000006 /* NoiseSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoiseSystem.swift; sourceTree = "<group>"; };
+		A20000000000000000000007 /* MonsterAI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonsterAI.swift; sourceTree = "<group>"; };
+		A20000000000000000000008 /* AudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioManager.swift; sourceTree = "<group>"; };
+		A20000000000000000000009 /* DeathAngel.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Resources/DeathAngel.png; sourceTree = "<group>"; };
+		A2000000000000000000000A /* player_step.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = Resources/player_step.wav; sourceTree = "<group>"; };
+		A2000000000000000000000B /* creature_breath.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = Resources/creature_breath.wav; sourceTree = "<group>"; };
+		A2000000000000000000000C /* SignalLast.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SignalLast.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A30000000000000000000001 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A40000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				A40000000000000000000002 /* SignalLast */,
+				A40000000000000000000003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A40000000000000000000002 /* SignalLast */ = {
+			isa = PBXGroup;
+			children = (
+				A20000000000000000000001 /* SignalLastApp.swift */,
+				A20000000000000000000002 /* ContentView.swift */,
+				A20000000000000000000003 /* GameScene.swift */,
+				A20000000000000000000004 /* GameState.swift */,
+				A20000000000000000000005 /* Player.swift */,
+				A20000000000000000000006 /* NoiseSystem.swift */,
+				A20000000000000000000007 /* MonsterAI.swift */,
+				A20000000000000000000008 /* AudioManager.swift */,
+				A20000000000000000000009 /* DeathAngel.png */,
+				A2000000000000000000000A /* player_step.wav */,
+				A2000000000000000000000B /* creature_breath.wav */,
+			);
+			path = SignalLast;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000003 /* Products */ = {
+			isa = PBXGroup;
+			children = (A2000000000000000000000C /* SignalLast.app */,);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A50000000000000000000001 /* SignalLast */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A70000000000000000000002 /* Build configuration list for PBXNativeTarget "SignalLast" */;
+			buildPhases = (
+				A30000000000000000000001 /* Frameworks */,
+				A60000000000000000000001 /* Sources */,
+				A60000000000000000000002 /* Resources */,
+			);
+			buildRules = ();
+			dependencies = ();
+			name = SignalLast;
+			productName = SignalLast;
+			productReference = A2000000000000000000000C /* SignalLast.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A60000000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000001 /* SignalLastApp.swift in Sources */,
+				A10000000000000000000002 /* ContentView.swift in Sources */,
+				A10000000000000000000003 /* GameScene.swift in Sources */,
+				A10000000000000000000004 /* GameState.swift in Sources */,
+				A10000000000000000000005 /* Player.swift in Sources */,
+				A10000000000000000000006 /* NoiseSystem.swift in Sources */,
+				A10000000000000000000007 /* MonsterAI.swift in Sources */,
+				A10000000000000000000008 /* AudioManager.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A60000000000000000000002 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000009 /* DeathAngel.png in Resources */,
+				A1000000000000000000000A /* player_step.wav in Resources */,
+				A1000000000000000000000B /* creature_breath.wav in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A80000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				TARGETED_DEVICE_FAMILY = "1,2";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
+				INFOPLIST_KEY_CFBundleDisplayName = "إشارة أخيرة";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = UIInterfaceOrientationPortrait;
+				PRODUCT_BUNDLE_IDENTIFIER = com.signal-last.prototype;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				CODE_SIGN_STYLE = Automatic;
+			};
+			name = Debug;
+		};
+		A80000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				TARGETED_DEVICE_FAMILY = "1,2";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
+				INFOPLIST_KEY_CFBundleDisplayName = "إشارة أخيرة";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = UIInterfaceOrientationPortrait;
+				PRODUCT_BUNDLE_IDENTIFIER = com.signal-last.prototype;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				CODE_SIGN_STYLE = Automatic;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A70000000000000000000001 /* Build configuration list for PBXProject "SignalLast" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A80000000000000000000001 /* Debug */,
+				A80000000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A70000000000000000000002 /* Build configuration list for PBXNativeTarget "SignalLast" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A80000000000000000000001 /* Debug */,
+				A80000000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin PBXProject section */
+		A90000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = { A50000000000000000000001 = { CreatedOnToolsVersion = 16.0; ProvisioningStyle = Automatic; }; };
+			};
+			buildConfigurationList = A70000000000000000000001 /* Build configuration list for PBXProject "SignalLast" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (en, Base);
+			mainGroup = A40000000000000000000001;
+			productRefGroup = A40000000000000000000003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (A50000000000000000000001 /* SignalLast */,);
+		};
+/* End PBXProject section */
+	};
+	rootObject = A90000000000000000000001 /* Project object */;
+}
