@@ -2,7 +2,7 @@ name: Build unsigned iOS app
 
 on:
   push:
-    branches: [main, master]
+    branches: [signal-last-game]
   pull_request:
   workflow_dispatch:
 
