@@ -21,8 +21,6 @@ targets:
     platform: iOS
     sources:
       - path: SignalLast
-        excludes:
-          - Resources/Demogorgon.png
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.signal-last.prototype
