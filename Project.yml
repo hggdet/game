@@ -1,0 +1,30 @@
+name: SignalLast
+options:
+  bundleIdPrefix: com.signal-last
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+    GENERATE_INFOPLIST_FILE: YES
+    INFOPLIST_KEY_UIUserInterfaceStyle: Dark
+    INFOPLIST_KEY_CFBundleDisplayName: "إشارة أخيرة"
+    INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
+    INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: UIInterfaceOrientationPortrait
+    CODE_SIGN_STYLE: Automatic
+targets:
+  SignalLast:
+    type: application
+    platform: iOS
+    sources:
+      - path: SignalLast
+        excludes:
+          - Resources/Demogorgon.png
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.signal-last.prototype
+        PRODUCT_NAME: SignalLast
+        SWIFT_EMIT_LOC_STRINGS: YES
